@@ -1,0 +1,58 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laravel_app
+    restart: unless-stopped
+    volumes:
+      - storagedata:/app/storage
+      - ./.env:/app/.env
+      # - ./docker/certs:/etc/caddy/certs #TODO: make this working!
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "80:80" # HTTP
+      - "443:443" # HTTPS
+      - "443:443/udp" # HTTP/3
+    networks:
+      - api
+    env_file:
+      - .env.docker
+
+  db:
+    image: postgres:alpine
+    container_name: laravel_pgsql
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    networks:
+      - api
+
+  redis:
+    image: redis:alpine
+    container_name: laravel_redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    networks:
+      - api
+    volumes:
+      - redisdata:/data
+
+networks:
+  api:
+
+volumes:
+  dbdata:
+  redisdata:
+  storagedata:
+  caddy_data:
+  caddy_config:
